@@ -24,7 +24,7 @@ export async function summarizeRepo(repo: {
   forkCount: number;
   url: string;
 }): Promise<RepoSummary> {
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const prompt = `
   Summarize this GitHub repository in JSON format with the following fields:
@@ -47,6 +47,9 @@ export async function summarizeRepo(repo: {
   const text = result.response.text();
 
   // Parse and validate with Zod
-  const parsed = SummarySchema.parse(JSON.parse(text));
+  // Clean the response text
+  const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+  const parsed = SummarySchema.parse(JSON.parse(cleaned));
   return parsed;
 }

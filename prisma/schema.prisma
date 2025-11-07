@@ -9,14 +9,14 @@ datasource db {
 
 model Project {
   id           String   @id @default(cuid())
-  repoUrl      String
+  repoUrl      String   @unique
   name         String
   description  String
-  tech         Json           // was String[]
+  tech         Json?           // was String[]
   stars        Int      @default(0)
   forks        Int      @default(0)
   lastCommitAt DateTime?
-  highlights   Json           // was String[]
+  highlights   Json?           // was String[]
   featured     Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
