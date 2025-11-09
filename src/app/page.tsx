@@ -30,7 +30,7 @@
 // }
 
 "use client";
-
+import AuthButton from "../components/AuthButton";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
@@ -40,6 +40,7 @@ export default function HomePage() {
       {/* Navbar */}
       <nav className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Smith’s Portfolio</h1>
+        <AuthButton />
         <div className="flex gap-4">
           <Link href="/" className="hover:underline">Home</Link>
           <Link href="/projects" className="hover:underline">Projects</Link>
@@ -82,6 +83,14 @@ export default function HomePage() {
           >
             View My Projects →
           </Link>
+
+          <Link
+            href="/create"
+            className="mt-6 ml-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            Create Your Portfolio →
+          </Link>
+
         </motion.div>
       </motion.section>
     </main>
