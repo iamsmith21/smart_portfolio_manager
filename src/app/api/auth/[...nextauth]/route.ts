@@ -1,7 +1,21 @@
 import NextAuth from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
+import type { NextAuthOptions } from "next-auth";
 
-export const authOptions = {
+// Extend NextAuth types
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    accessToken?: string;
+  }
+}
+
+export const authOptions: NextAuthOptions = {
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
@@ -16,9 +30,10 @@ export const authOptions = {
       }
       return token;
     },
-    //used when accessing using useSession() => the accessToken is stored under data.accessToken to auth user across our app.
     async session({ session, token }) {
-      session.accessToken = token.accessToken;
+      if (session) {
+        session.accessToken = token.accessToken;
+      }
       return session;
     },
   },
