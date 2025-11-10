@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import { 
   Sparkles, 
   Github, 
@@ -145,16 +145,18 @@ export default function HomePage() {
                 </Link>
               </>
             ) : (
-              <Link
-                href="/settings"
+              <motion.button
+                onClick={() => signIn("github")}
                 className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold text-lg shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 transform hover:scale-105"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <span className="relative z-10 flex items-center gap-2">
                   Get Started Free
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              </Link>
+              </motion.button>
             )}
           </motion.div>
 
@@ -341,13 +343,15 @@ export default function HomePage() {
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               ) : (
-                <Link
-                  href="/settings"
+                <motion.button
+                  onClick={() => signIn("github")}
                   className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   Get Started Now
                   <ArrowRight className="w-5 h-5" />
-                </Link>
+                </motion.button>
               )}
             </div>
           </motion.div>
