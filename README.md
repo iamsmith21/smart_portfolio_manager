@@ -35,7 +35,7 @@ npm install
 3. Set up environment variables
 Create a `.env` file in the root directory:
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="your_postgresql_connection_string"
 GITHUB_CLIENT_ID="your_github_client_id"
 GITHUB_CLIENT_SECRET="your_github_client_secret"
 NEXTAUTH_URL="http://localhost:3000"
@@ -49,6 +49,19 @@ npx prisma generate
 npx prisma db push
 ```
 
+### Database Setup (PostgreSQL)
+
+This project uses PostgreSQL with **Supabase** (recommended).
+
+**Quick Setup:**
+1. Create a free account at [Supabase](https://supabase.com)
+2. Create a new project
+3. Get your connection string from **Settings** → **Database**
+4. Add it to your `.env` file as `DATABASE_URL`
+
+See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) for detailed Supabase setup instructions.
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for full deployment guide.
+
 5. Run the development server
 ```bash
 npm run dev
@@ -60,7 +73,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the application.
 
 - **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
-- **Database**: SQLite with Prisma ORM
+- **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: NextAuth.js
 - **AI**: Google Gemini API
 - **Styling**: Tailwind CSS
