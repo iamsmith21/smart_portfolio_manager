@@ -16,6 +16,7 @@ export const authOptions = {
       }
       return token;
     },
+    //used when accessing using useSession() => the accessToken is stored under data.accessToken to auth user across our app.
     async session({ session, token }) {
       session.accessToken = token.accessToken;
       return session;

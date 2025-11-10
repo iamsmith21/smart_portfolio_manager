@@ -8,26 +8,33 @@ datasource db {
 }
 
 model Project {
-  id           String   @id @default(cuid())
-  repoUrl      String   @unique
+  id           String    @id @default(cuid())
+  profileId    String?
+  profile      Profile?  @relation(fields: [profileId], references: [id])
+  repoUrl      String    @unique
   name         String
   description  String
-  tech         Json?           // was String[]
-  stars        Int      @default(0)
-  forks        Int      @default(0)
+  tech         Json? // was String[]
+  stars        Int       @default(0)
+  forks        Int       @default(0)
   lastCommitAt DateTime?
-  highlights   Json?           // was String[]
-  featured     Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  highlights   Json? // was String[]
+  featured     Boolean   @default(false)
+  visible      Boolean   @default(true)  // Whether to show on portfolio
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Profile {
-  id        String   @id @default(cuid())
-  name      String
-  headline  String
-  about     String
-  skills    Json           // was String[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String    @id @default(cuid())
+  name           String    @unique
+  projects       Project[]
+  headline       String
+  about          String
+  skills         Json // was String[]
+  workExperience Json? // Array of { company, role, startDate, endDate, description, current }
+  education      Json? // Array of { school, degree, field, startDate, endDate, description }
+  contact        Json? // { email, linkedin, website, location, etc }
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
