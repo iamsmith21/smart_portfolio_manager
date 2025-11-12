@@ -227,8 +227,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                     title={project.name}
                     href={project.repoUrl}
                     containerClassName="h-full"
+                    className="w-full"
                   >
-                    <div className="flex basis-full flex-col h-full bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800">
+                    <div className="flex basis-full flex-col w-full h-full bg-white dark:bg-gray-900 rounded-xl overflow-hidden">
                       {/* Project Image */}
                       <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
                         <ProjectImage repoUrl={project.repoUrl} projectName={project.name} />
