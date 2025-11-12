@@ -223,50 +223,53 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project, index) => (
                 <AnimatedCard key={project.id} index={index}>
-                  <div className="h-full w-full min-h-[400px]">
-                    <PinContainer
-                      title={project.name}
-                      href={project.repoUrl}
-                      containerClassName="h-full w-full"
-                      className="w-full h-full"
-                    >
-                    <div className="flex basis-full flex-col w-full h-full bg-white dark:bg-gray-900 rounded-xl overflow-hidden">
-                      {/* Project Image */}
-                      <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
-                        <ProjectImage repoUrl={project.repoUrl} projectName={project.name} />
-                        {project.featured && (
-                          <div className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold shadow-lg z-10">
-                            ⭐ Featured
-                          </div>
-                        )}
-                      </div>
+                  <PinContainer
+                    title={project.name}
+                    href={project.repoUrl}
+                    containerClassName="h-full"
+                  >
+                    <div className="group relative bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200 dark:border-gray-800 h-full flex flex-col">
+                    {/* Project Image */}
+                    <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex-shrink-0">
+                      <ProjectImage repoUrl={project.repoUrl} projectName={project.name} />
+                      {project.featured && (
+                        <div className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                          ⭐ Featured
+                        </div>
+                      )}
+                    </div>
 
-                      {/* Project Content */}
-                      <div className="p-6 flex-1 flex flex-col">
-                        <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">
-                          {project.name}
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-3">
-                          {project.description}
-                        </p>
+                    {/* Project Content */}
+                    <div className="p-6 flex flex-col flex-1 min-h-0">
+                      <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        {project.name}
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-3 flex-shrink-0">
+                        {project.description}
+                      </p>
 
-                        {/* Highlights */}
-                        {Array.isArray(project.highlights) && project.highlights.length > 0 && (
-                          <ul className="mb-4 space-y-1">
+                      {/* Highlights */}
+                      <div className="flex-shrink-0 mb-4">
+                        {Array.isArray(project.highlights) && project.highlights.length > 0 ? (
+                          <ul className="space-y-1">
                             {project.highlights.filter((h): h is string => typeof h === 'string').slice(0, 2).map((highlight, i: number) => (
                               <li key={i} className="text-xs text-gray-500 dark:text-gray-400 flex items-start gap-2">
                                 <span className="text-blue-500 mt-1">•</span>
-                                <span>{highlight}</span>
+                                <span className="line-clamp-1">{highlight}</span>
                               </li>
                             ))}
                           </ul>
+                        ) : (
+                          <div className="h-6"></div>
                         )}
+                      </div>
 
-                        {/* Tech Stack */}
-                        {Array.isArray(project.tech) && project.tech.length > 0 && (() => {
+                      {/* Tech Stack */}
+                      <div className="flex-shrink-0 mb-4">
+                        {Array.isArray(project.tech) && project.tech.length > 0 ? (() => {
                           const techStack = project.tech.filter((t): t is string => typeof t === 'string');
                           return (
-                            <div className="flex flex-wrap gap-2 mb-4">
+                            <div className="flex flex-wrap gap-2">
                               {techStack.slice(0, 4).map((tech, i: number) => (
                                 <span
                                   key={i}
@@ -282,25 +285,36 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                               )}
                             </div>
                           );
-                        })()}
+                        })() : (
+                          <div className="h-6"></div>
+                        )}
+                      </div>
 
-                        {/* Stats and Actions */}
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-800 mt-auto">
-                          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                            <div className="flex items-center gap-1">
-                              <Star className="w-4 h-4" />
-                              <span>{project.stars}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <GitFork className="w-4 h-4" />
-                              <span>{project.forks}</span>
-                            </div>
+                      {/* Stats and Actions - Always at bottom */}
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-800 mt-auto">
+                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                          <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4" />
+                            <span>{project.stars}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <GitFork className="w-4 h-4" />
+                            <span>{project.forks}</span>
                           </div>
                         </div>
+                        <a
+                          href={project.repoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          <span>View</span>
+                        </a>
                       </div>
                     </div>
-                  </PinContainer>
                   </div>
+                  </PinContainer>
                 </AnimatedCard>
               ))}
             </div>
