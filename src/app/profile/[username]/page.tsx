@@ -223,12 +223,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project, index) => (
                 <AnimatedCard key={project.id} index={index}>
-                  <PinContainer
-                    title={project.name}
-                    href={project.repoUrl}
-                    containerClassName="h-full"
-                    className="w-full"
-                  >
+                  <div className="h-full w-full min-h-[400px]">
+                    <PinContainer
+                      title={project.name}
+                      href={project.repoUrl}
+                      containerClassName="h-full w-full"
+                      className="w-full h-full"
+                    >
                     <div className="flex basis-full flex-col w-full h-full bg-white dark:bg-gray-900 rounded-xl overflow-hidden">
                       {/* Project Image */}
                       <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
@@ -299,6 +300,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                       </div>
                     </div>
                   </PinContainer>
+                  </div>
                 </AnimatedCard>
               ))}
             </div>
