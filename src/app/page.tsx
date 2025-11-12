@@ -213,8 +213,55 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="relative py-32 px-6">
-        <div className="max-w-7xl mx-auto">
+      <section className="relative py-32 px-6 overflow-hidden">
+        {/* Scroll-based Moving Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div
+            className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-3xl"
+            initial={{ y: 0, x: 0 }}
+            whileInView={{ 
+              y: [0, -100, 0],
+              x: [0, 50, 0],
+            }}
+            viewport={{ once: false }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <motion.div
+            className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-3xl"
+            initial={{ y: 0, x: 0 }}
+            whileInView={{ 
+              y: [0, 150, 0],
+              x: [0, -80, 0],
+            }}
+            viewport={{ once: false }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 2,
+            }}
+          />
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 w-80 h-80 bg-pink-500/10 dark:bg-pink-500/5 rounded-full blur-3xl"
+            initial={{ y: 0 }}
+            whileInView={{ 
+              y: [0, -80, 0],
+            }}
+            viewport={{ once: false }}
+            transition={{
+              duration: 30,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 4,
+            }}
+          />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
