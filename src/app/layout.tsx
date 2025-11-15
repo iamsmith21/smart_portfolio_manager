@@ -21,6 +21,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Smart Portfolio Manager",
   description: "JUST DO IT? FOR FUNNN",
+  verification: {
+    google: "9hAhoTDnTTLEEPIwaWULZqeYHZTGz0-wTo66SzFSgg8",
+  }
 };
 
 export default function RootLayout({
