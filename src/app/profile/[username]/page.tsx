@@ -46,6 +46,21 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const workExperience = Array.isArray(profileWithExtras.workExperience) ? profileWithExtras.workExperience : [];
   const education = Array.isArray(profileWithExtras.education) ? profileWithExtras.education : [];
 
+  function ensureUrlProtocol(url: string): string {
+    if (!url.startsWith("http")) {
+      return `https://${url}`;
+    }
+    return url;
+  }
+
+  // Helper function to format dates consistently (prevents hydration mismatch)
+  function formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    const month = date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+    const year = date.toLocaleString('en-US', { year: 'numeric', timeZone: 'UTC' });
+    return `${month} ${year}`;
+  }
+  
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-black dark:to-gray-950">
       {/* Hero Section */}
@@ -153,9 +168,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {exp.startDate && new Date(exp.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        {exp.startDate && formatDate(exp.startDate)}
                         {exp.startDate && exp.endDate && ' - '}
-                        {exp.current ? 'Present' : (exp.endDate && new Date(exp.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }))}
+                        {exp.current ? 'Present' : (exp.endDate && formatDate(exp.endDate))}
                       </p>
                       {exp.current && (
                         <span className="inline-block mt-1 px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
@@ -195,9 +210,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {edu.startDate && new Date(edu.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        {edu.startDate && formatDate(edu.startDate)}
                         {edu.startDate && edu.endDate && ' - '}
-                        {edu.endDate && new Date(edu.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        {edu.endDate && formatDate(edu.endDate)}
                       </p>
                     </div>
                   </div>
@@ -327,7 +342,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               )}
               {contact.website && (
                 <a
-                  href={contact.website}
+                  href={ensureUrlProtocol(contact.website)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"

@@ -93,6 +93,14 @@ src/
 └── lib/              # Utility functions
 ```
 
+## 📚 Documentation
+
+For detailed flow documentation and guides:
+
+- **[Complete Flow Documentation](./docs/COMPLETE_FLOW.md)** - Step-by-step flow of the entire application with all files
+- **[Generic Web App Flow Template](./docs/GENERIC_WEB_APP_FLOW.md)** - Reusable template for understanding any web application
+- **[Quick Reference Guide](./docs/QUICK_REFERENCE.md)** - Quick lookup for files, endpoints, and common flows
+
 ## License
 
 MIT
