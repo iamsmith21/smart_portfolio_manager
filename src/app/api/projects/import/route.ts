@@ -7,8 +7,15 @@ import { summarizeRepo } from "@/lib/llm";
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
 
-  if (!session?.accessToken) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  if (!session?.accessToken) {
+    return NextResponse.json(
+      { error: "GitHub account not linked. Please link your GitHub account first." },
+      { status: 403 }
+    );
   }
 
   try {
@@ -22,43 +29,35 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get the user's GitHub username
-    const githubRes = await fetch("https://api.github.com/user", {
-      headers: {
-        Authorization: `token ${session.accessToken}`,
-        Accept: "application/vnd.github.v3+json",
-      },
-    });
+    let dbUser = null;
+    if (session.user.id) {
+      dbUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        include: { profile: true },
+      });
+    }
+    
+    if (!dbUser && session.user.email) {
+      dbUser = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        include: { profile: true },
+      });
+    }
 
-    if (!githubRes.ok) {
+    if (!dbUser || !dbUser.profile) {
       return NextResponse.json(
-        { error: "Failed to fetch user info" },
-        { status: 401 }
+        { error: "Profile not found. Please set up your username first." },
+        { status: 404 }
       );
     }
 
-    const githubUser = await githubRes.json();
-    const username = githubUser.login;
+    const profile = dbUser.profile;
 
-    // Get or create profile
-    const profile = await prisma.profile.upsert({
-      where: { name: username },
-      update: {},
-      create: {
-        name: username,
-        headline: "",
-        about: "",
-        skills: [],
-      },
-    });
-
-    // Fetch and summarize each selected repo
     const importedProjects = [];
     const errors = [];
 
     for (const repoUrl of repoUrls) {
       try {
-        // Extract owner and repo name from URL
         const urlMatch = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
         if (!urlMatch) {
           errors.push({ repoUrl, error: "Invalid repository URL" });
@@ -67,7 +66,6 @@ export async function POST(req: Request) {
 
         const [, owner, repoName] = urlMatch;
 
-        // Fetch repo details from GitHub API
         const repoRes = await fetch(
           `https://api.github.com/repos/${owner}/${repoName}`,
           {
@@ -88,7 +86,6 @@ export async function POST(req: Request) {
 
         const repoData = await repoRes.json();
 
-        // Prepare repo data for summarization
         const repoForSummary = {
           name: repoData.name,
           description: repoData.description,
@@ -97,10 +94,8 @@ export async function POST(req: Request) {
           url: repoData.html_url,
         };
 
-        // Summarize using AI
         const summary = await summarizeRepo(repoForSummary);
 
-        // Save project to database
         const project = await prisma.project.upsert({
           where: { repoUrl: repoData.html_url },
           update: {

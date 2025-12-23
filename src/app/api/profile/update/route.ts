@@ -23,40 +23,54 @@ export async function POST(req: Request) {
       projects,
     } = body;
 
-    // Verify the user is updating their own profile by fetching their GitHub username
-    if (!session?.accessToken) {
+    if (!session?.user) {
       return NextResponse.json(
         { error: "Not authenticated" },
         { status: 401 }
       );
     }
 
-    const githubRes = await fetch("https://api.github.com/user", {
-      headers: {
-        Authorization: `token ${session.accessToken}`,
-        Accept: "application/vnd.github.v3+json",
-      },
-    });
+    let dbUser = null;
+    if (session.user.id) {
+      dbUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        include: { profile: true },
+      });
+    }
+    
+    if (!dbUser && session.user.email) {
+      dbUser = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        include: { profile: true },
+      });
+    }
 
-    if (!githubRes.ok) {
+    if (!dbUser) {
+      console.error("User not found in database", {
+        userId: session.user.id,
+        email: session.user.email,
+      });
       return NextResponse.json(
-        { error: "Failed to verify user" },
-        { status: 401 }
+        { error: "User not found. Please try signing in again." },
+        { status: 404 }
       );
     }
 
-    const githubUser = await githubRes.json();
-    if (githubUser.login !== username) {
+    const existingProfile = await prisma.profile.findUnique({
+      where: { name: username },
+    });
+
+    if (existingProfile && existingProfile.userId !== dbUser.id) {
       return NextResponse.json(
-        { error: "Unauthorized: Can only update your own profile" },
+        { error: "Unauthorized: This profile belongs to another user" },
         { status: 403 }
       );
     }
 
-    // Update or create profile
     const profile = await prisma.profile.upsert({
       where: { name: username },
       update: {
+        userId: dbUser.id,
         headline: headline || "",
         about: about || "",
         workExperience: workExperience || null,
@@ -65,6 +79,7 @@ export async function POST(req: Request) {
         contact: contact || null,
       },
       create: {
+        userId: dbUser.id,
         name: username,
         headline: headline || "",
         about: about || "",
@@ -75,7 +90,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // Update project visibility if provided
     if (projects && Array.isArray(projects)) {
       await Promise.all(
         projects.map(async (p: { id: string; visible: boolean }) => {

@@ -18,7 +18,6 @@ export async function GET(
     });
 
     if (!profile) {
-      // Return empty/default data if profile doesn't exist yet
       return NextResponse.json({
         headline: "",
         about: "",

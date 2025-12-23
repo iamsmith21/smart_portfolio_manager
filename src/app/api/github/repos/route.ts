@@ -9,7 +9,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // Get per_page from query params, default to 100
   const { searchParams } = new URL(req.url);
   const perPage = searchParams.get("per_page") || "100";
 

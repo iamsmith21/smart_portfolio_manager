@@ -73,9 +73,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-black dark:to-gray-950 overflow-hidden">
-      {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Animated Background */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
@@ -160,7 +158,6 @@ export default function HomePage() {
             )}
           </motion.div>
 
-          {/* Stats */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -191,7 +188,6 @@ export default function HomePage() {
           </motion.div>
         </div>
 
-        {/* Scroll Indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -212,9 +208,7 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Features Section */}
       <section className="relative py-32 px-6 overflow-hidden">
-        {/* Scroll-based Moving Background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div
             className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-3xl"
@@ -304,7 +298,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
       <section className="relative py-32 px-6 bg-gradient-to-br from-blue-50/50 via-purple-50/50 to-pink-50/50 dark:from-gray-900/50 dark:via-gray-900/50 dark:to-gray-900/50">
         <div className="max-w-7xl mx-auto">
           <motion.div
@@ -354,7 +347,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="relative py-32 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
@@ -405,7 +397,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer Spacing */}
       <div className="h-20"></div>
     </main>
   );

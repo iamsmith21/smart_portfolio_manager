@@ -11,6 +11,17 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     where: {
       name: username
     },
+    include: {
+      user: {
+        include: {
+          accounts: {
+            where: {
+              provider: "github"
+            }
+          }
+        }
+      }
+    },
   });
 
   if (!profile) {
@@ -31,21 +42,20 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     orderBy: { stars: "desc" },
   });
   
-  // Filter to only show visible projects (type assertion until Prisma client regenerated)
   const projects = allProjects.filter((p: any) => p.visible !== false);
 
-  // Get contact info (type assertion until Prisma client regenerated)
   const profileWithExtras = profile as any;
   const contact = profileWithExtras.contact && typeof profileWithExtras.contact === 'object' ? profileWithExtras.contact : null;
   const linkedinUrl = contact?.linkedin || (profile.about?.startsWith("http") ? profile.about : null);
   const aboutText = profile.about?.startsWith("http") ? null : profile.about;
 
-  // Get skills array
   const skills = Array.isArray(profile.skills) ? profile.skills.filter((s): s is string => typeof s === 'string') : [];
   
-  // Get work experience and education (type assertion until Prisma client regenerated)
   const workExperience = Array.isArray(profileWithExtras.workExperience) ? profileWithExtras.workExperience : [];
   const education = Array.isArray(profileWithExtras.education) ? profileWithExtras.education : [];
+
+  const githubUrl = contact?.github || null;
+  const profileImage = contact?.image || null;
 
   function ensureUrlProtocol(url: string): string {
     if (!url.startsWith("http")) {
@@ -54,7 +64,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     return url;
   }
 
-  // Helper function to format dates consistently (prevents hydration mismatch)
   function formatDate(dateString: string): string {
     const date = new Date(dateString);
     const month = date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
@@ -64,23 +73,34 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-black dark:to-gray-950">
-      {/* Hero Section */}
       <AnimatedSection>
         <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/5 dark:via-purple-500/5 dark:to-pink-500/5"></div>
         <div className="relative max-w-6xl mx-auto px-6 py-20 md:py-32">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
-            {/* Avatar */}
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
-              <img
-                src={`https://github.com/${profile.name}.png`}
-                alt={`${profile.name}'s avatar`}
-                className="relative w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white dark:border-gray-900 shadow-2xl"
-              />
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt={`${profile.name}'s avatar`}
+                  className="relative w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white dark:border-gray-900 shadow-2xl object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div 
+                className={`relative w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white dark:border-gray-900 shadow-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center ${profileImage ? 'hidden' : ''}`}
+              >
+                <span className="text-4xl md:text-5xl font-bold text-white">
+                  {profile.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
             </div>
 
-            {/* Profile Info */}
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
                 {profile.name}
@@ -89,17 +109,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 {profile.headline}
               </p>
 
-              {/* Social Links */}
               <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                <a
-                  href={`https://github.com/${profile.name}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  <Github className="w-5 h-5" />
-                  <span>GitHub</span>
-                </a>
+                {githubUrl && (
+                  <a
+                    href={githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    <Github className="w-5 h-5" />
+                    <span>GitHub</span>
+                  </a>
+                )}
                 {linkedinUrl && (
                   <a
                     href={linkedinUrl}
@@ -118,7 +139,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       </section>
       </AnimatedSection>
 
-      {/* About Section */}
       {aboutText && (
         <AnimatedSection>
           <section className="max-w-6xl mx-auto px-6 py-12">
@@ -132,7 +152,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         </AnimatedSection>
       )}
 
-      {/* Skills Section */}
       {skills.length > 0 && (
         <AnimatedSection delay={0.2}>
           <section className="max-w-6xl mx-auto px-6 py-12">
@@ -151,7 +170,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         </AnimatedSection>
       )}
 
-      {/* Work Experience Section */}
       {workExperience.length > 0 && (
         <AnimatedSection delay={0.3}>
           <section className="max-w-6xl mx-auto px-6 py-12">
@@ -190,7 +208,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         </AnimatedSection>
       )}
 
-      {/* Education Section */}
       {education.length > 0 && (
         <AnimatedSection delay={0.35}>
           <section className="max-w-6xl mx-auto px-6 py-12">
@@ -244,7 +261,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                     containerClassName="h-full"
                   >
                     <div className="group relative bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200 dark:border-gray-800 h-full flex flex-col">
-                    {/* Project Image */}
                     <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex-shrink-0">
                       <ProjectImage repoUrl={project.repoUrl} projectName={project.name} />
                       {project.featured && (
@@ -254,7 +270,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                       )}
                     </div>
 
-                    {/* Project Content */}
                     <div className="p-6 flex flex-col flex-1 min-h-0">
                       <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                         {project.name}
@@ -263,7 +278,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                         {project.description}
                       </p>
 
-                      {/* Highlights */}
                       <div className="flex-shrink-0 mb-4">
                         {Array.isArray(project.highlights) && project.highlights.length > 0 ? (
                           <ul className="space-y-1">
@@ -279,7 +293,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                         )}
                       </div>
 
-                      {/* Tech Stack */}
                       <div className="flex-shrink-0 mb-4">
                         {Array.isArray(project.tech) && project.tech.length > 0 ? (() => {
                           const techStack = project.tech.filter((t): t is string => typeof t === 'string');
@@ -305,7 +318,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                         )}
                       </div>
 
-                      {/* Stats and Actions - Always at bottom */}
                       <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-800 mt-auto">
                         <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                           <div className="flex items-center gap-1">
@@ -335,10 +347,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             </div>
           )}
         </section>
-      </AnimatedSection>
+        </AnimatedSection>
 
-      
-      {/* Contact Section */}
       {contact && (contact.email || contact.website || contact.location) && (
         <AnimatedSection delay={0.4}>
           <section className="max-w-6xl mx-auto px-6 py-12">
@@ -375,9 +385,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         </AnimatedSection>
       )}
 
-      {/* Projects Section */}
-
-      {/* Footer Spacing */}
       <div className="h-20"></div>
     </main>
   );

@@ -45,12 +45,10 @@ export const PinContainer = ({
       onMouseLeave={onMouseLeave}
       onClick={handleClick}
     >
-      {/* Invisible placeholder to maintain grid layout */}
       <div className="opacity-0 pointer-events-none w-full">
         {children}
       </div>
       
-      {/* 3D transformed card */}
       <div
         style={{
           perspective: "1000px",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Save, ExternalLink, Github, Loader2, X } from "lucide-react";
 
@@ -28,6 +28,8 @@ interface Contact {
   linkedin: string;
   website: string;
   location: string;
+  github: string;
+  image: string;
 }
 
 interface Project {
@@ -35,6 +37,17 @@ interface Project {
   name: string;
   description: string;
   visible: boolean;
+  repoUrl?: string;
+  tech?: string[];
+  highlights?: string[];
+}
+
+interface ManualProject {
+  name: string;
+  description: string;
+  url: string;
+  tech: string[];
+  highlights: string[];
 }
 
 export default function SettingsPage() {
@@ -57,25 +70,36 @@ export default function SettingsPage() {
     linkedin: "",
     website: "",
     location: "",
+    github: "",
+    image: "",
   });
   const [projects, setProjects] = useState<Project[]>([]);
   const [githubUsername, setGithubUsername] = useState("");
-  
-  // Import projects state
+  const [hasGitHubAccount, setHasGitHubAccount] = useState(false);
+
   const [importing, setImporting] = useState(false);
   const [fetchingRepos, setFetchingRepos] = useState(false);
   const [availableRepos, setAvailableRepos] = useState<any[]>([]);
   const [selectedRepos, setSelectedRepos] = useState<string[]>([]);
   const [showImportModal, setShowImportModal] = useState(false);
 
-  // Fetch current profile data
+  const [showManualProjectModal, setShowManualProjectModal] = useState(false);
+  const [manualProject, setManualProject] = useState<ManualProject>({
+    name: "",
+    description: "",
+    url: "",
+    tech: [],
+    highlights: [],
+  });
+  const [newTech, setNewTech] = useState("");
+  const [newHighlight, setNewHighlight] = useState("");
+  const [addingManualProject, setAddingManualProject] = useState(false);
+
   useEffect(() => {
-    // Wait for session to finish loading
     if (status === "loading") {
       return;
     }
 
-    // If not authenticated after loading, redirect
     if (status === "unauthenticated" || !session) {
       router.push("/");
       return;
@@ -84,14 +108,14 @@ export default function SettingsPage() {
     const fetchProfile = async () => {
 
       try {
-        // Get GitHub username
         const userRes = await fetch("/api/github/user");
         if (userRes.ok) {
           const userData = await userRes.json();
-          setGithubUsername(userData.username);
+          const username = userData.username;
+          setGithubUsername(username);
+          setHasGitHubAccount(userData.hasGitHubAccount || false);
 
-          // Fetch profile data
-          const profileRes = await fetch(`/api/profile/${userData.username}`);
+          const profileRes = await fetch(`/api/profile/${username}`);
           if (profileRes.ok) {
             const profileData = await profileRes.json();
             setHeadline(profileData.headline || "");
@@ -112,8 +136,15 @@ export default function SettingsPage() {
               linkedin: "",
               website: "",
               location: "",
+              github: "",
+              image: "",
             });
             setProjects(profileData.projects || []);
+          }
+        } else {
+          const userData = await userRes.json().catch(() => null);
+          if (userData?.error) {
+            setError("Failed to load user information. Please try again.");
           }
         }
       } catch (err) {
@@ -201,12 +232,27 @@ export default function SettingsPage() {
     );
   };
 
+  const handleLinkGitHub = () => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const callbackUrl = encodeURIComponent(`${origin}/settings`);
+    window.location.href = `${origin}/api/auth/signin/github?callbackUrl=${callbackUrl}`;
+  };
+
   const fetchGitHubRepos = async () => {
+    if (!hasGitHubAccount) {
+      handleLinkGitHub();
+      return;
+    }
+
     setFetchingRepos(true);
     setError(null);
     try {
       const res = await fetch("/api/github/repos?per_page=100");
       if (!res.ok) {
+        if (res.status === 403) {
+          setError("GitHub account not linked. Please link your GitHub account first.");
+          return;
+        }
         throw new Error("Failed to fetch repositories");
       }
       const repos = await res.json();
@@ -249,7 +295,6 @@ export default function SettingsPage() {
         throw new Error(data.error || "Failed to import projects");
       }
 
-      // Refresh projects list
       if (githubUsername) {
         const profileRes = await fetch(`/api/profile/${githubUsername}`);
         if (profileRes.ok) {
@@ -274,9 +319,60 @@ export default function SettingsPage() {
     }
   };
 
+  const handleAddManualProject = async () => {
+    if (!manualProject.name || !manualProject.description) {
+      setError("Name and description are required");
+      return;
+    }
+
+    setAddingManualProject(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/projects/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(manualProject),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to add project");
+      }
+
+      if (githubUsername) {
+        const profileRes = await fetch(`/api/profile/${githubUsername}`);
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          setProjects(profileData.projects || []);
+        }
+      }
+
+      setSuccess(true);
+      setShowManualProjectModal(false);
+      setManualProject({
+        name: "",
+        description: "",
+        url: "",
+        tech: [],
+        highlights: [],
+      });
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to add project. Please try again."
+      );
+    } finally {
+      setAddingManualProject(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!githubUsername) {
-      setError("GitHub username not found");
+      setError("Username not found. Please refresh the page.");
       return;
     }
 
@@ -388,7 +484,6 @@ export default function SettingsPage() {
       )}
 
       <div className="space-y-8">
-        {/* Profile Section */}
         <section className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-800">
           <h2 className="text-2xl font-semibold mb-4">Profile</h2>
           <div className="space-y-4">
@@ -415,7 +510,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Work Experience Section */}
         <section className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold">Work Experience</h2>
@@ -527,7 +621,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Education Section */}
         <section className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold">Education</h2>
@@ -632,30 +725,48 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Projects Section */}
         <section className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold">Projects</h2>
-            <button
-              onClick={fetchGitHubRepos}
-              disabled={fetchingRepos || importing}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              {fetchingRepos ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Loading...</span>
-                </>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowManualProjectModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Manual Project</span>
+              </button>
+              {hasGitHubAccount ? (
+                <button
+                  onClick={fetchGitHubRepos}
+                  disabled={fetchingRepos || importing}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {fetchingRepos ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Loading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Github className="w-4 h-4" />
+                      <span>Import from GitHub</span>
+                    </>
+                  )}
+                </button>
               ) : (
-                <>
+                <button
+                  onClick={handleLinkGitHub}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-all"
+                >
                   <Github className="w-4 h-4" />
-                  <span>Import from GitHub</span>
-                </>
+                  <span>Link GitHub Account</span>
+                </button>
               )}
-            </button>
+            </div>
           </div>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Select which GitHub projects to display on your portfolio
+            Add projects manually or import from GitHub to showcase on your portfolio
           </p>
           <div className="space-y-2">
             {projects.map((project) => (
@@ -683,29 +794,45 @@ export default function SettingsPage() {
             {projects.length === 0 && (
               <div className="text-center py-8">
                 <Github className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-500 mb-2">
-                  No projects found. Import your GitHub repositories to get started.
+                <p className="text-gray-500 mb-4">
+                  No projects found. Add projects manually or import from GitHub.
                 </p>
-                <button
-                  onClick={fetchGitHubRepos}
-                  disabled={fetchingRepos || importing}
-                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  {fetchingRepos ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Loading...
-                    </span>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => setShowManualProjectModal(true)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
+                  >
+                    Add Manual Project
+                  </button>
+                  {hasGitHubAccount ? (
+                    <button
+                      onClick={fetchGitHubRepos}
+                      disabled={fetchingRepos || importing}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                      {fetchingRepos ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading...
+                        </span>
+                      ) : (
+                        "Import from GitHub"
+                      )}
+                    </button>
                   ) : (
-                    "Import from GitHub"
+                    <button
+                      onClick={handleLinkGitHub}
+                      className="px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-all"
+                    >
+                      Link GitHub Account
+                    </button>
                   )}
-                </button>
+                </div>
               </div>
             )}
           </div>
         </section>
 
-        {/* Skills Section */}
         <section className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-800">
           <h2 className="text-2xl font-semibold mb-4">Skills</h2>
           <div className="flex gap-2 mb-4">
@@ -742,7 +869,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Contact Section */}
         <section className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-800">
           <h2 className="text-2xl font-semibold mb-4">Contact</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -793,15 +919,40 @@ export default function SettingsPage() {
                 className="w-full border rounded-lg p-3 dark:bg-gray-800"
               />
             </div>
+            <div>
+              <label className="block mb-2 font-medium">GitHub URL</label>
+              <input
+                type="url"
+                value={contact.github}
+                onChange={(e) =>
+                  setContact({ ...contact, github: e.target.value })
+                }
+                placeholder="https://github.com/yourusername"
+                className="w-full border rounded-lg p-3 dark:bg-gray-800"
+              />
+            </div>
+            <div>
+              <label className="block mb-2 font-medium">Profile Image URL</label>
+              <input
+                type="url"
+                value={contact.image}
+                onChange={(e) =>
+                  setContact({ ...contact, image: e.target.value })
+                }
+                placeholder="https://example.com/your-image.jpg"
+                className="w-full border rounded-lg p-3 dark:bg-gray-800"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Leave empty to use default avatar with your initial
+              </p>
+            </div>
           </div>
         </section>
       </div>
 
-      {/* Import Projects Modal */}
       {showImportModal && (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -823,7 +974,6 @@ export default function SettingsPage() {
               </button>
             </div>
 
-            {/* Modal Content */}
             <div className="flex-1 overflow-y-auto p-6">
               {availableRepos.length === 0 ? (
                 <div className="text-center py-12">
@@ -837,11 +987,10 @@ export default function SettingsPage() {
                   {availableRepos.map((repo) => (
                     <div
                       key={repo.id}
-                      className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                        selectedRepos.includes(repo.html_url)
-                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"
-                      }`}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedRepos.includes(repo.html_url)
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                        : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"
+                        }`}
                       onClick={() => toggleRepoSelection(repo.html_url)}
                     >
                       <div className="flex items-start gap-4">
@@ -894,13 +1043,11 @@ export default function SettingsPage() {
               )}
             </div>
 
-            {/* Modal Footer */}
             <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 {selectedRepos.length > 0
-                  ? `${selectedRepos.length} repository${
-                      selectedRepos.length > 1 ? "ies" : "y"
-                    } selected`
+                  ? `${selectedRepos.length} repository${selectedRepos.length > 1 ? "ies" : "y"
+                  } selected`
                   : "No repositories selected"}
               </div>
               <div className="flex items-center gap-3">
@@ -933,6 +1080,215 @@ export default function SettingsPage() {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showManualProjectModal && (
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Add Manual Project
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Add a project manually to your portfolio
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowManualProjectModal(false);
+                  setManualProject({
+                    name: "",
+                    description: "",
+                    url: "",
+                    tech: [],
+                    highlights: [],
+                  });
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div>
+                <label className="block mb-2 font-medium">Project Name *</label>
+                <input
+                  type="text"
+                  value={manualProject.name}
+                  onChange={(e) =>
+                    setManualProject({ ...manualProject, name: e.target.value })
+                  }
+                  placeholder="My Awesome Project"
+                  className="w-full border rounded-lg p-3 dark:bg-gray-800"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-medium">Description *</label>
+                <textarea
+                  value={manualProject.description}
+                  onChange={(e) =>
+                    setManualProject({
+                      ...manualProject,
+                      description: e.target.value,
+                    })
+                  }
+                  placeholder="A brief description of your project..."
+                  rows={4}
+                  className="w-full border rounded-lg p-3 dark:bg-gray-800"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-medium">Project URL</label>
+                <input
+                  type="url"
+                  value={manualProject.url}
+                  onChange={(e) =>
+                    setManualProject({ ...manualProject, url: e.target.value })
+                  }
+                  placeholder="https://example.com/project"
+                  className="w-full border rounded-lg p-3 dark:bg-gray-800"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-medium">Technologies</label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={newTech}
+                    onChange={(e) => setNewTech(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter" && newTech.trim()) {
+                        e.preventDefault();
+                        setManualProject({
+                          ...manualProject,
+                          tech: [...manualProject.tech, newTech.trim()],
+                        });
+                        setNewTech("");
+                      }
+                    }}
+                    placeholder="Add technology (press Enter)"
+                    className="flex-1 border rounded-lg p-2 dark:bg-gray-800"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {manualProject.tech.map((tech, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm flex items-center gap-2"
+                    >
+                      {tech}
+                      <button
+                        onClick={() => {
+                          setManualProject({
+                            ...manualProject,
+                            tech: manualProject.tech.filter((_, i) => i !== index),
+                          });
+                        }}
+                        className="hover:text-blue-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block mb-2 font-medium">Highlights</label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={newHighlight}
+                    onChange={(e) => setNewHighlight(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter" && newHighlight.trim()) {
+                        e.preventDefault();
+                        setManualProject({
+                          ...manualProject,
+                          highlights: [
+                            ...manualProject.highlights,
+                            newHighlight.trim(),
+                          ],
+                        });
+                        setNewHighlight("");
+                      }
+                    }}
+                    placeholder="Add highlight (press Enter)"
+                    className="flex-1 border rounded-lg p-2 dark:bg-gray-800"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {manualProject.highlights.map((highlight, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-sm flex items-center gap-2"
+                    >
+                      {highlight}
+                      <button
+                        onClick={() => {
+                          setManualProject({
+                            ...manualProject,
+                            highlights: manualProject.highlights.filter(
+                              (_, i) => i !== index
+                            ),
+                          });
+                        }}
+                        className="hover:text-purple-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-800">
+              <button
+                onClick={() => {
+                  setShowManualProjectModal(false);
+                  setManualProject({
+                    name: "",
+                    description: "",
+                    url: "",
+                    tech: [],
+                    highlights: [],
+                  });
+                }}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                disabled={addingManualProject}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddManualProject}
+                disabled={
+                  !manualProject.name ||
+                  !manualProject.description ||
+                  addingManualProject
+                }
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+              >
+                {addingManualProject ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Adding...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    <span>Add Project</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
