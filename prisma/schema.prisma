@@ -12,7 +12,7 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   name          String?
-  password      String?   // Hashed password for email/password users
+  password      String?
   image         String?
   accounts      Account[]
   sessions      Session[]
@@ -56,11 +56,11 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// Update Profile model to link to User
 model Profile {
   id             String    @id @default(cuid())
-  userId         String?   @unique // Link to User instead of just name
+  userId         String?   @unique
   name           String    @unique
+  customDomain   String?   @unique
   projects       Project[]
   headline       String
   about          String
@@ -80,13 +80,13 @@ model Project {
   repoUrl      String    @unique
   name         String
   description  String
-  tech         Json? // was String[]
+  tech         Json?
   stars        Int       @default(0)
   forks        Int       @default(0)
   lastCommitAt DateTime?
-  highlights   Json? // was String[]
+  highlights   Json?
   featured     Boolean   @default(false)
-  visible      Boolean   @default(true)  // Whether to show on portfolio
+  visible      Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 }

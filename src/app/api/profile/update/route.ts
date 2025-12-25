@@ -21,6 +21,7 @@ export async function POST(req: Request) {
       skills,
       contact,
       projects,
+      customDomain,
     } = body;
 
     if (!session?.user) {
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
         include: { profile: true },
       });
     }
-    
+
     if (!dbUser && session.user.email) {
       dbUser = await prisma.user.findUnique({
         where: { email: session.user.email },
@@ -67,12 +68,20 @@ export async function POST(req: Request) {
       );
     }
 
+    if (customDomain) {
+      const domainRegex = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+      if (!domainRegex.test(customDomain)) {
+        return NextResponse.json({ error: "Invalid domain format" }, { status: 400 });
+      }
+    }
+
     const profile = await prisma.profile.upsert({
       where: { name: username },
       update: {
         userId: dbUser.id,
         headline: headline || "",
         about: about || "",
+        customDomain: customDomain || null,
         workExperience: workExperience || null,
         education: education || null,
         skills: skills || [],
@@ -83,6 +92,7 @@ export async function POST(req: Request) {
         name: username,
         headline: headline || "",
         about: about || "",
+        customDomain: customDomain || null,
         workExperience: workExperience || null,
         education: education || null,
         skills: skills || [],
@@ -102,7 +112,14 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, profile });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === "P2002" && error.meta?.target?.includes("customDomain")) {
+      return NextResponse.json(
+        { error: "This domain is already taken by another user." },
+        { status: 409 }
+      );
+    }
+
     console.error("Failed to update profile:", error);
     return NextResponse.json(
       { error: "Failed to update profile" },

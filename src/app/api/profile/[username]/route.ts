@@ -21,6 +21,7 @@ export async function GET(
       return NextResponse.json({
         headline: "",
         about: "",
+        customDomain: "",
         workExperience: [],
         education: [],
         skills: [],
@@ -32,6 +33,7 @@ export async function GET(
     return NextResponse.json({
       headline: profile.headline,
       about: profile.about,
+      customDomain: profile.customDomain,
       workExperience: profile.workExperience,
       education: profile.education,
       skills: profile.skills,

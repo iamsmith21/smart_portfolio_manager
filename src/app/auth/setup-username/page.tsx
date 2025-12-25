@@ -21,7 +21,7 @@ export default function SetupUsernamePage() {
       router.push("/auth/signin");
       return;
     }
-    
+
     if (status === "authenticated" && session) {
       const hasProfile = (session as any).hasProfile;
       if (hasProfile) {
@@ -173,20 +173,20 @@ export default function SetupUsernamePage() {
                   ) : null}
                 </div>
               </div>
-              
+
               {username.length > 0 && username.length < 3 && (
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Username must be at least 3 characters
                 </p>
               )}
-              
+
               {username.length >= 3 && isAvailable === true && (
                 <p className="mt-1 text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" />
                   This username is available!
                 </p>
               )}
-              
+
               {username.length >= 3 && isAvailable === false && (
                 <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
                   <XCircle className="w-3 h-3" />
@@ -197,7 +197,7 @@ export default function SetupUsernamePage() {
               <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 Your portfolio will be available at:{" "}
                 <span className="font-mono text-blue-600 dark:text-blue-400">
-                  /profile/{username || "your-username"}
+                  /{username || "your-username"}
                 </span>
               </p>
             </div>

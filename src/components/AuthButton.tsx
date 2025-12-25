@@ -12,9 +12,9 @@ export default function AuthButton() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => (window.location.href = "/auth/signin")}
-        className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-800 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+        className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-full font-semibold shadow-md hover:shadow-lg hover:bg-primary-foreground hover:text-primary transition-all duration-300">
         <span>Sign in</span>
-        </motion.button>
+      </motion.button>
     );
   }
 

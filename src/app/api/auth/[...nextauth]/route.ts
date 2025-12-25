@@ -34,10 +34,10 @@ export const authOptions: NextAuthOptions = {
     GitHubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-      authorization: { 
-        params: { 
-          scope: "read:user repo user:email" 
-        } 
+      authorization: {
+        params: {
+          scope: "read:user repo user:email"
+        }
       },
     }),
 
@@ -98,39 +98,37 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account, profile }) {
-      // Allow credentials provider to sign in without adapter interference
       if (account?.provider === "credentials") {
         return true;
       }
-      // For OAuth providers, use adapter
       return true;
     },
     async jwt({ token, account, user, trigger }) {
       if (user) {
         token.id = user.id;
-        
+
         try {
-           const dbUser = await prisma.user.findUnique({
-              where: { id: user.id },
-              select: { 
-                profile: {
-                  select: { name: true }
-                }
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: {
+              profile: {
+                select: { name: true }
               }
-            });
-            token.hasProfile = !!dbUser?.profile;
-            token.username = dbUser?.profile?.name || null;
+            }
+          });
+          token.hasProfile = !!dbUser?.profile;
+          token.username = dbUser?.profile?.name || null;
         } catch (error) {
           console.error("Error fetching profile in JWT callback:", error);
         }
       }
-      
+
       if (token.id) {
-        const needsProfileCheck = 
-          token.hasProfile === undefined || 
+        const needsProfileCheck =
+          token.hasProfile === undefined ||
           trigger === "update" ||
           (!token.hasProfile && token.id);
-        
+
         if (needsProfileCheck) {
           try {
             const dbUser = await prisma.user.findUnique({
@@ -151,7 +149,7 @@ export const authOptions: NextAuthOptions = {
       if (account) {
         token.accessToken = account.access_token;
       }
-      
+
       return token;
     },
     async session({ session, token }) {
