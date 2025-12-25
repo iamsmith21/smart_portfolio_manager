@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { AlertCircle, Home } from "lucide-react";
+import { AlertCircle, Home, Loader2 } from "lucide-react";
 import { Suspense } from "react";
 
 function AuthErrorContent() {
@@ -65,7 +65,16 @@ function AuthErrorContent() {
 export default function AuthErrorPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-black dark:to-gray-950 px-4">
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={
+        <div className="max-w-md w-full text-center">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 p-8">
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
+              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+            </div>
+          </div>
+        </div>
+      }>
         <AuthErrorContent />
       </Suspense>
     </main>

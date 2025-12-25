@@ -1,13 +1,13 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Github, Mail, Loader2, Lock, Eye, EyeOff } from "lucide-react";
 import {motion } from "framer-motion";
 import Link from "next/link";
 
-export default function SignInPage() {
+function SignInForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isLogin, setIsLogin] = useState(true);
@@ -252,5 +252,24 @@ export default function SignInPage() {
           </motion.div>
         </main>
       );
-    }
+}
+
+export default function SignInPage() {
+    return (
+        <Suspense fallback={
+            <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-black dark:to-gray-950 px-4 py-12">
+                <div className="w-full max-w-md">
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 p-8">
+                        <div className="text-center">
+                            <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
+                            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        }>
+            <SignInForm />
+        </Suspense>
+    );
+}
     
