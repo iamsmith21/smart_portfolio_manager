@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import PDFParser from 'pdf2json';
 
-// Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
@@ -24,9 +23,8 @@ export async function POST(req: Request) {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // 1. Extract Text using pdf2json
         const resumeText = await new Promise<string>((resolve, reject) => {
-            const pdfParser = new PDFParser(null, 1); // 1 = text content only
+            const pdfParser = new PDFParser(null, true);
 
             pdfParser.on("pdfParser_dataError", (errData: any) => {
                 console.error("PDF Parsing Error:", errData.parserError);
@@ -34,7 +32,6 @@ export async function POST(req: Request) {
             });
 
             pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
-                // Determine if we have raw text content or need to extract it
                 const rawText = pdfParser.getRawTextContent();
                 resolve(rawText);
             });
@@ -42,7 +39,6 @@ export async function POST(req: Request) {
             pdfParser.parseBuffer(buffer);
         });
 
-        // 2. Send to Gemini for Parsing
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const prompt = `
@@ -88,7 +84,6 @@ export async function POST(req: Request) {
         const response = await result.response;
         const text = response.text();
 
-        // Clean up potential markdown code blocks
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const parsedData = JSON.parse(cleanJson);
 
