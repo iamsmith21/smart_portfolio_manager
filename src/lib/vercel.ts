@@ -1,5 +1,4 @@
 // Helper to construct headers and validation
-Documentation: https://vercel.com/docs/rest-api/endpoints#domains
 const VERCEL_API_TOKEN = process.env.VERCEL_API_TOKEN;
 const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
 const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID;
