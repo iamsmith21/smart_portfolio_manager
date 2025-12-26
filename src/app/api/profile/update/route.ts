@@ -23,6 +23,7 @@ export async function POST(req: Request) {
       contact,
       projects,
       customDomain,
+      theme,
     } = body;
 
     if (!session?.user) {
@@ -69,39 +70,29 @@ export async function POST(req: Request) {
       );
     }
 
-    // --- Custom Domain Logic ---
     const currentDomain = existingProfile?.customDomain || null;
     const newDomain = customDomain ? customDomain.trim() : null;
 
     if (newDomain !== currentDomain) {
-      // 1. If adding/changing a domain
       if (newDomain) {
-        // Validate format
         const domainRegex = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
         if (!domainRegex.test(newDomain)) {
           return NextResponse.json({ error: "Invalid domain format" }, { status: 400 });
         }
 
-        // Add to Vercel Project
-        console.log(`Adding domain ${newDomain} to Vercel...`);
         const vercelRes = await addDomainToVercel(newDomain);
 
         if (vercelRes.error) {
-          // If we failed to add it to Vercel, DO NOT save to DB.
-          // Return the specific error so the UI can show "Domain taken" etc.
           return NextResponse.json({
             error: vercelRes.error,
           }, { status: 400 });
         }
       }
 
-      // 2. If removing/changing, remove the OLD domain from Vercel
       if (currentDomain) {
-        console.log(`Removing domain ${currentDomain} from Vercel...`);
         await removeDomainFromVercel(currentDomain);
       }
     }
-    // ---------------------------
 
     const profile = await prisma.profile.upsert({
       where: { name: username },
@@ -114,6 +105,7 @@ export async function POST(req: Request) {
         education: education || null,
         skills: skills || [],
         contact: contact || null,
+        theme: theme || "minimal",
       },
       create: {
         userId: dbUser.id,
@@ -125,6 +117,7 @@ export async function POST(req: Request) {
         education: education || null,
         skills: skills || [],
         contact: contact || null,
+        theme: theme || "minimal",
       },
     });
 

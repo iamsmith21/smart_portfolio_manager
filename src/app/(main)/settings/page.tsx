@@ -105,6 +105,61 @@ export default function SettingsPage() {
   const [newTech, setNewTech] = useState("");
   const [newHighlight, setNewHighlight] = useState("");
   const [addingManualProject, setAddingManualProject] = useState(false);
+  const [theme, setTheme] = useState("minimal");
+
+  // Resume Parser State
+  const [parsingResume, setParsingResume] = useState(false);
+
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File is too large. Max 5MB.");
+      return;
+    }
+
+    setParsingResume(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/profile/parse-resume", {
+        method: "POST",
+        body: formData,
+      });
+
+      const json = await res.json();
+
+      if (res.ok && json.success) {
+        const data = json.data;
+
+        // Auto-fill form fields
+        if (data.headline) setHeadline(data.headline);
+        if (data.about) setAbout(data.about);
+        if (data.workExperience?.length) setWorkExperience(data.workExperience);
+        if (data.education?.length) setEducation(data.education);
+        if (data.skills?.length) setSkills(data.skills);
+        if (data.contact) {
+          setContact(prev => ({
+            ...prev,
+            location: data.contact.location || prev.location,
+            linkedin: data.contact.linkedin || prev.linkedin,
+            website: data.contact.website || prev.website
+          }));
+        }
+
+        alert("Resume parsed successfully! Please review the fields.");
+      } else {
+        alert("Failed to parse resume: " + (json.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading resume.");
+    } finally {
+      setParsingResume(false);
+    }
+  };
 
   useEffect(() => {
     if (status === "loading") {
@@ -156,6 +211,7 @@ export default function SettingsPage() {
               image: "",
             });
             setProjects(profileData.projects || []);
+            setTheme(profileData.theme || "minimal");
           }
         } else {
           const userData = await userRes.json().catch(() => null);
@@ -405,6 +461,7 @@ export default function SettingsPage() {
           headline,
           about,
           customDomain,
+          theme,
           workExperience,
           education,
           skills,
@@ -518,10 +575,10 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Grid Layout */}
+
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-8 md:gap-12 items-start">
 
-        {/* Sidebar Navigation */}
+
         <aside className="sticky top-32 space-y-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -573,9 +630,44 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* --- TAB CONTENT: PROFILE --- */}
+
               {activeTab === "profile" && (
                 <section className="space-y-6">
+
+                  <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 p-4 rounded-xl mb-6">
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-800/30 rounded-lg text-blue-600 dark:text-blue-400 mt-1">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-1">Auto-Fill from Resume</h3>
+                        <p className="text-sm text-blue-700 dark:text-blue-400 mb-3">
+                          Upload your resume (PDF) and AI will extract your details to fill these fields instantly.
+                        </p>
+
+                        <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium cursor-pointer transition-colors ${parsingResume ? 'opacity-50 pointer-events-none' : ''}`}>
+                          {parsingResume ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Analyzing PDF...
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-4 h-4"><FolderGit2 className="w-4 h-4" /></div>
+                              Upload Resume
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept=".pdf"
+                            className="hidden"
+                            onChange={handleResumeUpload}
+                            disabled={parsingResume}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                   <div className="p-6 rounded-2xl bg-white dark:bg-secondary/20 border border-zinc-200 dark:border-white/5 backdrop-blur-sm space-y-6">
                     <h2 className="text-xl font-semibold flex items-center gap-2">
                       <User className="w-5 h-5 text-primary" /> Profile Details
@@ -601,14 +693,169 @@ export default function SettingsPage() {
                           className="w-full bg-white dark:bg-background/50 border border-zinc-200 dark:border-white/10 rounded-lg p-3 focus:ring-2 focus:ring-primary/50 focus:border-transparent outline-none transition-all placeholder:text-muted-foreground/30 resize-none"
                         />
                       </div>
+
+                      {/* --- Theme Selection --- */}
+                      <div className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                          <LayoutDashboard className="w-5 h-5" />
+                          Theme
+                        </h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Minimal Theme Option */}
+                          <button
+                            type="button"
+                            onClick={() => setTheme("minimal")}
+                            className={`relative group p-4 border-2 rounded-xl text-left transition-all h-48 flex flex-col justify-between ${theme === "minimal"
+                              ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
+                              : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                              }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium">Minimal (Default)</span>
+                              {theme === "minimal" && <div className="w-3 h-3 bg-blue-500 rounded-full" />}
+                            </div>
+                            <div className="space-y-2 opacity-50 scale-90 origin-top-left">
+                              <div className="h-2 w-1/3 bg-zinc-300 dark:bg-zinc-700 rounded" />
+                              <div className="h-2 w-2/3 bg-zinc-200 dark:bg-zinc-800 rounded" />
+                            </div>
+                          </button>
+                          {/* Terminal Theme Option */}
+                          <button
+                            type="button"
+                            onClick={() => setTheme("terminal")}
+                            className={`relative group p-4 border-2 rounded-xl text-left transition-all h-48 flex flex-col justify-between ${theme === "terminal"
+                              ? "border-green-500 bg-green-50/50 dark:bg-green-900/20"
+                              : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                              }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-mono font-medium text-green-600 dark:text-green-400">Terminal</span>
+                              {theme === "terminal" && <div className="w-3 h-3 bg-green-500 rounded-full" />}
+                            </div>
+                            <div className="bg-black p-2 rounded text-[8px] font-mono text-green-500 opacity-70">
+                              {"> init_portfolio..."}
+                            </div>
+                          </button>
+
+                          {/* MacOS Theme Option */}
+                          <button
+                            type="button"
+                            onClick={() => setTheme("macos")}
+                            className={`relative group p-4 border-2 rounded-xl text-left transition-all overflow-hidden h-48 flex flex-col justify-between ${theme === "macos"
+                              ? "border-purple-500 bg-purple-50/50 dark:bg-purple-900/20"
+                              : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                              }`}
+                          >
+                            {/* Background Wallpaper Preview */}
+                            <div className="absolute inset-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1477346611705-65d1883cee1e?auto=format&fit=crop&q=80&w=200')] bg-cover"></div>
+
+                            <div className="relative z-10 flex items-center justify-between mb-2">
+                              <span className="font-medium text-purple-700 dark:text-purple-300">The OS</span>
+                              {theme === "macos" && <div className="w-3 h-3 bg-purple-500 rounded-full" />}
+                            </div>
+
+                            <div className="relative z-10 flex gap-2 mt-4 ml-1">
+                              <div className="w-6 h-6 rounded-lg bg-blue-400/20 border border-blue-400/50"></div>
+                              <div className="w-6 h-6 rounded-lg bg-pink-400/20 border border-pink-400/50"></div>
+                              <div className="w-6 h-6 rounded-lg bg-white/20 border border-white/50"></div>
+                            </div>
+                          </button>
+
+
+
+                          {/* Bento Theme Option */}
+                          <button
+                            type="button"
+                            onClick={() => setTheme("bento")}
+                            className={`relative group p-4 border-2 rounded-xl text-left transition-all overflow-hidden h-48 flex flex-col justify-between ${theme === "bento"
+                              ? "border-zinc-900 dark:border-white ring-1 ring-zinc-900/20 dark:ring-white/20"
+                              : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                              }`}
+                          >
+                            <div className="flex items-center justify-between mb-4">
+                              <span className="font-bold text-lg tracking-tight">Bento</span>
+                              {theme === "bento" && <div className="w-3 h-3 bg-zinc-900 dark:bg-white rounded-full" />}
+                            </div>
+
+                            {/* Grid Preview */}
+                            <div className="grid grid-cols-2 gap-2 opacity-60">
+                              <div className="h-12 bg-zinc-100 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700"></div>
+                              <div className="space-y-2">
+                                <div className="h-5 bg-zinc-100 dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700"></div>
+                                <div className="h-5 bg-zinc-900 dark:bg-white rounded-md"></div>
+                              </div>
+                              <div className="col-span-2 h-6 bg-zinc-100 dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700"></div>
+                            </div>
+                          </button>
+
+                          {/* VS Code Theme Option */}
+                          <button
+                            type="button"
+                            onClick={() => setTheme("vscode")}
+                            className={`relative group p-4 border-2 rounded-xl text-left transition-all overflow-hidden h-48 flex flex-col justify-between ${theme === "vscode"
+                              ? "border-[#007acc] bg-[#1e1e1e] ring-1 ring-[#007acc]/50"
+                              : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-[#1e1e1e]"
+                              }`}
+                          >
+                            <div className="flex items-center justify-between mb-4">
+                              <span className={`font-mono font-bold text-lg tracking-tight ${theme === 'vscode' ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>The Editor</span>
+                              {theme === "vscode" && <div className="w-3 h-3 bg-[#007acc] rounded-full" />}
+                            </div>
+
+                            {/* Editor Preview */}
+                            <div className="flex flex-col gap-1 opacity-80 font-mono text-[10px]">
+                              <div className="flex gap-2">
+                                <span className="text-[#858585]">1</span>
+                                <span className="text-[#c586c0]">import</span>
+                                <span className="text-[#9cdcfe]">React</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <span className="text-[#858585]">2</span>
+                                <span className="text-[#569cd6]">const</span>
+                                <span className="text-[#dcdcaa]">Portfolio</span>
+                                <span className="text-[#d4d4d4]">=</span>
+                                <span className="text-[#da70d6]">()</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <span className="text-[#858585]">3</span>
+                                <span className="text-[#6a9955] pl-2">// Ready to code</span>
+                              </div>
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#007acc]"></div>
+                          </button>
+
+                          {/* Neo-Brutalist Theme Option */}
+                          <button
+                            type="button"
+                            onClick={() => setTheme("neobrutal")}
+                            className={`relative group p-4 border-4 rounded-none text-left transition-all h-48 flex flex-col justify-between ${theme === "neobrutal"
+                              ? "border-black bg-yellow-300 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transform -translate-y-1"
+                              : "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 border-2 hover:border-black dark:hover:border-white"
+                              }`}
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <span className={`font-black uppercase text-lg tracking-tighter ${theme === 'neobrutal' ? 'text-black' : 'text-zinc-600 dark:text-zinc-400'}`}>Neo-Brutal</span>
+                              {theme === "neobrutal" && <div className="w-4 h-4 bg-black border-2 border-white" />}
+                            </div>
+
+                            {/* Brutal Preview */}
+                            <div className="flex gap-2">
+                              <div className={`w-8 h-8 border-2 border-black ${theme === 'neobrutal' ? 'bg-pink-400' : 'bg-zinc-200'} shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}></div>
+                              <div className={`w-8 h-8 border-2 border-black ${theme === 'neobrutal' ? 'bg-cyan-400' : 'bg-zinc-300'} shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}></div>
+                              <div className={`flex-1 border-2 border-black ${theme === 'neobrutal' ? 'bg-white' : 'bg-zinc-100'} shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center`}>
+                                <span className="font-bold text-[10px] text-black">A S D F</span>
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-muted-foreground mb-2">Custom Domain</label>
 
                         {savedDomain ? (
-                          <div className={`flex flex-col gap-2 p-3 rounded-lg border ${domainStatus?.verified
-                            ? "border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-900/50"
-                            : "border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-900/50"
-                            }`}>
+                          <div className="flex flex-col gap-2 p-3 rounded-lg border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-900/50">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2 font-medium">
                                 <div className={`w-2 h-2 rounded-full ${domainStatus?.verified ? "bg-green-500" : "bg-amber-500 animate-pulse"}`} />

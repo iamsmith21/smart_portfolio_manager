@@ -1,9 +1,7 @@
-// Helper to construct headers and validation
 const VERCEL_API_TOKEN = process.env.VERCEL_API_TOKEN;
 const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
 const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID;
 
-// Helper to construct headers and validation
 const getHeaders = () => {
     if (!VERCEL_API_TOKEN) {
         throw new Error("Missing VERCEL_API_TOKEN");
@@ -22,9 +20,6 @@ const getApiUrl = (endpoint: string) => {
     return url;
 };
 
-/**
- * Add a domain to the Vercel project
- */
 export async function addDomainToVercel(domain: string) {
     if (!VERCEL_PROJECT_ID) throw new Error("Missing VERCEL_PROJECT_ID");
 
@@ -50,9 +45,6 @@ export async function addDomainToVercel(domain: string) {
     return data;
 }
 
-/**
- * Remove a domain from the Vercel project
- */
 export async function removeDomainFromVercel(domain: string) {
     if (!VERCEL_PROJECT_ID) throw new Error("Missing VERCEL_PROJECT_ID");
 
@@ -71,9 +63,6 @@ export async function removeDomainFromVercel(domain: string) {
     return data;
 }
 
-/**
- * Check the configuration status of a domain
- */
 export async function getDomainStatus(domain: string) {
     if (!VERCEL_PROJECT_ID) throw new Error("Missing VERCEL_PROJECT_ID");
 

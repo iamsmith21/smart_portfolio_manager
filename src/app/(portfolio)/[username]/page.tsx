@@ -5,6 +5,11 @@ import { About } from "@/components/profile/About";
 import { Experience } from "@/components/profile/Experience";
 import { ProjectGrid } from "@/components/profile/ProjectGrid";
 import { ContactFooter } from "@/components/profile/ContactFooter";
+import { TerminalTheme } from "@/components/themes/TerminalTheme";
+import { MacOSTheme } from "@/components/themes/MacOSTheme";
+import { BentoTheme } from "@/components/themes/BentoTheme";
+import { VSCodeTheme } from "@/components/themes/VSCodeTheme";
+import { NeoBrutalistTheme } from "@/components/themes/NeoBrutalistTheme";
 
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
@@ -66,6 +71,34 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       highlights: Array.isArray(p.highlights) ? p.highlights : [],
       featured: p.featured || false,
     }));
+
+  if (profile.theme === "terminal") {
+    // @ts-ignore - profile handling needs stricter types, but this works for now
+    return <TerminalTheme profile={{ ...profile, user: profile.user }} projects={projects} />;
+  }
+
+  if (profile.theme === "macos") {
+    // @ts-ignore
+    return <MacOSTheme profile={profile} projects={projects} />;
+  }
+
+  if (profile.theme === "bento") {
+    // @ts-ignore
+    return <BentoTheme profile={profile} projects={projects} />;
+  }
+
+  if (profile.theme === "vscode") {
+    // @ts-ignore
+    return <VSCodeTheme profile={profile} projects={projects} />;
+  }
+
+  if (profile.theme === "neobrutal") {
+    // @ts-ignore
+    return <NeoBrutalistTheme profile={profile} projects={projects} />;
+  }
+
+
+
 
   return (
     <main className="min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 font-sans selection:bg-zinc-100 dark:selection:bg-zinc-800 selection:text-black dark:selection:text-white">

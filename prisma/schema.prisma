@@ -60,6 +60,7 @@ model Profile {
   userId         String?   @unique
   name           String    @unique
   customDomain   String?   @unique
+  theme          String    @default("minimal")
   projects       Project[]
   headline       String
   about          String
