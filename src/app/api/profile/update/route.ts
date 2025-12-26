@@ -87,9 +87,10 @@ export async function POST(req: Request) {
         const vercelRes = await addDomainToVercel(newDomain);
 
         if (vercelRes.error) {
+          // If we failed to add it to Vercel, DO NOT save to DB.
+          // Return the specific error so the UI can show "Domain taken" etc.
           return NextResponse.json({
             error: vercelRes.error,
-            details: "Failed to verify domain with Vercel provider."
           }, { status: 400 });
         }
       }
