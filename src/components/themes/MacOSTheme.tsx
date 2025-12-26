@@ -358,7 +358,7 @@ function DesktopIcon({ label, icon, onClick }: any) {
         <button onClick={(e) => { e.stopPropagation(); onClick(); }} onDoubleClick={onClick} className="group flex flex-col items-center gap-1 w-20 cursor-pointer text-shadow-sm select-none">
             <div className="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 shadow-lg group-hover:bg-white/20 hover:border-white/30 transition-all duration-200">
                 <div className="w-9 h-9 text-white drop-shadow-md [&>svg]:w-full [&>svg]:h-full">
-                    {React.cloneElement(icon, { className: "w-full h-full stroke-[1.5] drop-shadow-md text-blue-100" })}
+                    {React.cloneElement(icon as any, { className: "w-full h-full stroke-[1.5] drop-shadow-md text-blue-100" })}
                 </div>
             </div>
             <span className="text-white text-xs font-medium drop-shadow-md bg-black/20 px-2 py-0.5 rounded-full backdrop-blur-sm group-hover:bg-blue-600/80 transition-colors">
@@ -377,7 +377,7 @@ function DockIcon({ icon, onClick, isOpen }: any) {
             className="pb-2 relative group"
         >
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/30 shadow-inner group-hover:bg-white/40 transition-colors">
-                {React.cloneElement(icon as React.ReactElement, { className: "w-7 h-7 drop-shadow-sm" })}
+                {React.cloneElement(icon as any, { className: "w-7 h-7 drop-shadow-sm" })}
             </div>
             {isOpen && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white/80 rounded-full shadow-[0_0_5px_white]"></div>}
         </motion.button>
