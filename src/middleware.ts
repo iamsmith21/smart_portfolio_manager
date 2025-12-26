@@ -25,13 +25,18 @@ export async function middleware(request: NextRequest) {
 
     try {
         const apiUrl = `${url.origin}/api/domain/${hostname}`;
-        const response = await fetch(apiUrl);
+        const response = await fetch(apiUrl, { cache: 'no-store' });
 
         if (response.ok) {
             const data = await response.json();
 
             if (data.username) {
-                return NextResponse.rewrite(new URL(`/${data.username}${url.pathname}`, request.url));
+                // RESTRICT: Only allow root path for custom domains.
+                // If they try to visit /settings, /login, etc., redirect them to their portfolio home.
+                if (url.pathname !== "/") {
+                    return NextResponse.redirect(new URL("/", request.url));
+                }
+                return NextResponse.rewrite(new URL(`/${data.username}`, request.url));
             }
         }
     } catch (error) {
