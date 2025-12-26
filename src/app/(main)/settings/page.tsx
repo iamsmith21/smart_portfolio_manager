@@ -5,7 +5,7 @@ import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
   Plus, Trash2, Save, ExternalLink, Github, Loader2, X,
-  User, Briefcase, GraduationCap, Code2, FolderGit2, Mail, LayoutDashboard
+  User, Briefcase, GraduationCap, Code2, FolderGit2, Mail, LayoutDashboard, RefreshCw, CheckCircle, AlertTriangle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -70,6 +70,8 @@ export default function SettingsPage() {
   const [about, setAbout] = useState("");
   const [customDomain, setCustomDomain] = useState("");
   const [savedDomain, setSavedDomain] = useState("");
+  const [domainStatus, setDomainStatus] = useState<{ verified: boolean; error?: string } | null>(null);
+  const [checkingDomain, setCheckingDomain] = useState(false);
   const [workExperience, setWorkExperience] = useState<WorkExperience[]>([]);
   const [education, setEducation] = useState<Education[]>([]);
   const [skills, setSkills] = useState<string[]>([]);
@@ -131,6 +133,9 @@ export default function SettingsPage() {
             setAbout(profileData.about || "");
             setCustomDomain(profileData.customDomain || "");
             setSavedDomain(profileData.customDomain || "");
+            if (profileData.customDomain) {
+              checkDomainStatus(profileData.customDomain);
+            }
             setWorkExperience(
               Array.isArray(profileData.workExperience)
                 ? profileData.workExperience
@@ -426,6 +431,24 @@ export default function SettingsPage() {
     }
   };
 
+  const checkDomainStatus = async (domain: string) => {
+    setCheckingDomain(true);
+    try {
+      const res = await fetch(`/api/domain/verify?domain=${domain}`);
+      const data = await res.json();
+
+      if (data.verified) {
+        setDomainStatus({ verified: true });
+      } else {
+        setDomainStatus({ verified: false, error: data.error || "Not configured" });
+      }
+    } catch (err) {
+      setDomainStatus({ verified: false, error: "Failed to check status" });
+    } finally {
+      setCheckingDomain(false);
+    }
+  };
+
   // --- Render Helpers ---
 
   const tabs = [
@@ -582,27 +605,56 @@ export default function SettingsPage() {
                         <label className="block text-sm font-medium text-muted-foreground mb-2">Custom Domain</label>
 
                         {savedDomain ? (
-                          // ACTIVE STATE (Fixed Field + Delete Icon)
-                          <div className="flex items-center justify-between p-3 rounded-lg border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-900/50">
-                            <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-medium">
-                              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                              <a href={`http://${savedDomain}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                                {savedDomain}
-                              </a>
+                          <div className={`flex flex-col gap-2 p-3 rounded-lg border ${domainStatus?.verified
+                            ? "border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-900/50"
+                            : "border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-900/50"
+                            }`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 font-medium">
+                                <div className={`w-2 h-2 rounded-full ${domainStatus?.verified ? "bg-green-500" : "bg-amber-500 animate-pulse"}`} />
+                                <a
+                                  href={`http://${savedDomain}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`hover:underline ${domainStatus?.verified ? "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"}`}
+                                >
+                                  {savedDomain}
+                                </a>
+                                {domainStatus?.verified && <CheckCircle className="w-4 h-4 text-green-500" />}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => checkDomainStatus(savedDomain)}
+                                  disabled={checkingDomain}
+                                  className="p-2 hover:bg-white/50 dark:hover:bg-black/20 rounded-full text-muted-foreground transition-colors"
+                                  title="Refresh Status"
+                                >
+                                  <RefreshCw className={`w-4 h-4 ${checkingDomain ? "animate-spin" : ""}`} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setCustomDomain("");
+                                    setSavedDomain(""); // Unlocks the field
+                                    setDomainStatus(null);
+                                  }}
+                                  className="p-2 hover:bg-white/50 dark:hover:bg-black/20 rounded-full text-muted-foreground hover:text-destructive transition-colors"
+                                  title="Remove Domain"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
-                            <button
-                              onClick={() => {
-                                setCustomDomain("");
-                                setSavedDomain(""); // Unlocks the field
-                              }}
-                              className="p-2 hover:bg-white/50 dark:hover:bg-black/20 rounded-full text-muted-foreground hover:text-destructive transition-colors"
-                              title="Remove Domain"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+
+                            {!domainStatus?.verified && (
+                              <div className="text-xs text-amber-700 dark:text-amber-400 mt-1 pl-4">
+                                {checkingDomain ? "Checking configuration..." : "Pending configuration. Ensure your DNS records are correct."}
+                                <div className="mt-1 font-mono bg-white/50 dark:bg-black/20 p-2 rounded">
+                                  A Record: <b>76.76.21.21</b>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ) : (
-                          // EDIT STATE (Input Field)
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="text-muted-foreground text-sm">https://</span>

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
+import { addDomainToVercel, removeDomainFromVercel } from "@/lib/vercel";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -68,12 +69,38 @@ export async function POST(req: Request) {
       );
     }
 
-    if (customDomain) {
-      const domainRegex = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
-      if (!domainRegex.test(customDomain)) {
-        return NextResponse.json({ error: "Invalid domain format" }, { status: 400 });
+    // --- Custom Domain Logic ---
+    const currentDomain = existingProfile?.customDomain || null;
+    const newDomain = customDomain ? customDomain.trim() : null;
+
+    if (newDomain !== currentDomain) {
+      // 1. If adding/changing a domain
+      if (newDomain) {
+        // Validate format
+        const domainRegex = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+        if (!domainRegex.test(newDomain)) {
+          return NextResponse.json({ error: "Invalid domain format" }, { status: 400 });
+        }
+
+        // Add to Vercel Project
+        console.log(`Adding domain ${newDomain} to Vercel...`);
+        const vercelRes = await addDomainToVercel(newDomain);
+
+        if (vercelRes.error) {
+          return NextResponse.json({
+            error: vercelRes.error,
+            details: "Failed to verify domain with Vercel provider."
+          }, { status: 400 });
+        }
+      }
+
+      // 2. If removing/changing, remove the OLD domain from Vercel
+      if (currentDomain) {
+        console.log(`Removing domain ${currentDomain} from Vercel...`);
+        await removeDomainFromVercel(currentDomain);
       }
     }
+    // ---------------------------
 
     const profile = await prisma.profile.upsert({
       where: { name: username },
